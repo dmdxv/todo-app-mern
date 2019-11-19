@@ -1,6 +1,10 @@
 import React, { Component } from "react";
 import Axios from "axios";
 import "./App.css";
+import "react-dates/initialize";
+import "react-dates/lib/css/_datepicker.css";
+import "./dates_ovveride.css";
+import { SingleDatePicker } from "react-dates";
 
 class App extends Component {
   constructor(props) {
@@ -8,7 +12,10 @@ class App extends Component {
     this.state = {
       response: [],
       task: null,
-      priority: null
+      priority: null,
+      file: null,
+      fileName: String,
+      date: null
     };
 
     this.onTaskChange = this.onTaskChange.bind(this);
@@ -27,15 +34,19 @@ class App extends Component {
 
   handleSubmit = event => {
     event.preventDefault();
-    const { task } = this.state;
-    const { priority } = this.state;
+    const { task, date, priority, file } = this.state;
 
-    var data = {
-      task: task,
-      priority: priority
-    };
+    const formData = new FormData();
+    formData.append("task", task);
+    formData.append("priority", priority);
+    formData.append("file", file);
+    formData.append("date", date);
 
-    Axios.post("http://localhost:3002/addTask", data).then(
+    Axios.post("http://localhost:3002/addTask", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data"
+      }
+    }).then(
       response => {
         this.setState({ response: response.data.data });
       },
@@ -58,6 +69,15 @@ class App extends Component {
 
   onTaskChange = event => {
     this.setState({ task: event.target.value });
+  };
+
+  onDateChange = param => {
+    this.setState({ date: param });
+  };
+
+  onFileChange = event => {
+    this.setState({ file: event.target.files[0] });
+    this.setState({ fileName: event.target.files[0].name });
   };
 
   onPriorityChange = event => {
@@ -85,6 +105,12 @@ class App extends Component {
               </button>
             </div>
           </div>
+          {item.imageURL ? (
+            <div className="mt-1">
+              <hr></hr>
+              <img src={item.imageURL} className="img-fluid" />
+            </div>
+          ) : null}
         </div>
       </div>
     ));
@@ -99,15 +125,48 @@ class App extends Component {
               onSubmit={this.handleSubmit}
             >
               <h5 className="font-weight-bold text-center">Add Task</h5>
-              <div className="form-group">
-                <input
-                  type="text"
-                  className="form-control colour-primary text-white"
-                  id="task"
-                  name="task"
-                  placeholder="Task"
-                  onChange={this.onTaskChange}
-                />
+              <div className="form-row mb-2">
+                <div class="col">
+                  <input
+                    type="text"
+                    className="form-control colour-primary text-white"
+                    id="task"
+                    name="task"
+                    placeholder="Task"
+                    onChange={this.onTaskChange}
+                  />
+                </div>
+                <div class="col">
+                  <SingleDatePicker
+                    small={true}
+                    block={false}
+                    numberOfMonths={1}
+                    date={this.state.date}
+                    onDateChange={date => this.onDateChange(date)}
+                    focused={this.state.focused}
+                    onFocusChange={({ focused }) => this.setState({ focused })}
+                    openDirection="right"
+                    hideKeyboardShortcutsPanel={true}
+                  />
+                </div>
+              </div>
+              <div className="form-group mb-2">
+                <div className="input-group">
+                  <div className="custom-file">
+                    <input
+                      type="file"
+                      className="custom-file-input colour-primary"
+                      id="inputGroupFile04"
+                      onChange={this.onFileChange}
+                    />
+                    <label
+                      className="custom-file-label"
+                      htmlFor="inputGroupFile04"
+                    >
+                      {this.state.fileName}
+                    </label>
+                  </div>
+                </div>
               </div>
               <select
                 className="custom-select mb-3 colour-primary text-white"
